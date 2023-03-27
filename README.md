@@ -165,7 +165,7 @@ There are several datasets that are prescribed for you to use in this part. Your
     **Structure:**
     ```sql
     (
-        address text,  -- The address of the parcel
+        parcel_address text,  -- The address of the parcel
         stop_name text,  -- The name of the bus stop
         distance double precision  -- The distance apart in meters
     )
