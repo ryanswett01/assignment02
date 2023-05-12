@@ -3,11 +3,11 @@
 set -e
 set -x
 
-POSTGRES_NAME=${POSTGRES_NAME:-musa_509}
-POSTGRES_PORT=${POSTGRES_PORT:-5432}
+POSTGRES_NAME=${POSTGRES_NAME:-assignment02}
+POSTGRES_PORT=${POSTGRES_PORT:-5434}
 POSTGRES_USER=${POSTGRES_USER:-postgres}
 POSTGRES_PASS=${POSTGRES_PASS:-postgres}
-PYTHON_COMMAND=${PYTHON_COMMAND:-python}
+PYTHON_COMMAND=${PYTHON_COMMAND:-python3}
 
 SCRIPTDIR=$(readlink -f $(dirname $0))
 DATADIR=$(readlink -f $(dirname $0)/../__data__)
@@ -162,6 +162,7 @@ ogr2ogr \
     PG:"host=localhost port=${POSTGRES_PORT} dbname=${POSTGRES_NAME} user=${POSTGRES_USER} password=${POSTGRES_PASS}" \
     -nln census.blockgroups_2020 \
     -nlt MULTIPOLYGON \
+    -t_srs EPSG:4326 \
     -lco GEOMETRY_NAME=geog \
     -lco GEOM_TYPE=GEOGRAPHY \
     -overwrite \
