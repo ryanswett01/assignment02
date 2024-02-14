@@ -1,24 +1,21 @@
 {
-  "name": "assignment02",
+  "name": "assignment01",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --color=true",
-    "lint": "sqlfluff lint --dialect postgres .",
-    "lint-fix": "sqlfluff fix --dialect postgres ."
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --color=true"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "dotenv": "^16.0.3",
-    "jest": "^29.4.1",
-    "papaparse": "^5.3.2",
-    "pg": "^8.9.0"
+    "dotenv": "^16.4.1",
+    "jest": "^29.7.0",
+    "papaparse": "^5.4.1",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
-    "csv": "^6.2.7",
     "eslint": "^8.33.0"
   }
 }

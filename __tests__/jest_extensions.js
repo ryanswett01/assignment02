@@ -10,27 +10,55 @@ import Papa from 'papaparse';
 import * as dotenv from 'dotenv';
 
 // Load environment overrides
-dotenv.config();
+const envLoadResult = dotenv.config();
+if (envLoadResult.error) {
+  if (envLoadResult.error.code == 'ENOENT') {
+    throw new Error('Looks like there\'s no connection settings file in your root folder.\nDid you remember to copy the ".env.template" file to ".env"?');
+  } else {
+    throw envLoadResult.error;
+  }
+}
 
 // Get the current path
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+function indent(str, n=4, char=' ') {
+  const prefix = char.repeat(n);
+  return str.replace(/^/gm, prefix);  // Replace each beginning of a line with the spaces.
+}
 
 async function toReturnRecords(queryFN, resultsFNs, options = {}) {
   // Read the SQL query code.
   const fullQueryFN = path.resolve(__dirname, queryFN);
   let sql = null;
   try {
+    // Read the query file.
     sql = await fs.readFile(fullQueryFN, { encoding: 'utf8', flag: 'r' });
-    sql = sql.trim().replace(/;$/g, '');  // Remove trailing semicolon
+
+    sql = sql.replace(/\/\*.*?\*\//gs, '');  // Remove block comments
+    sql = sql.replace(/--.*$/gm, '');        // Remove line comments
+    sql = sql.trim();                        // Trim whitespace
+    sql = sql.replace(/;$/gm, '');           // Remove trailing semicolon
+
+    // Check if there's anything left. If not, then abort immediately and fail
+    // the test.
+    if (sql === '') {
+      return {
+        pass: false,
+        message: () => `No query defined yet in file "${queryFN}".`,
+      };
+    }
+
+    // Wrap the query as a subquery so that we can add ORDER BY and LIMIT if
+    // appropriate.
+    sql = `SELECT * FROM (\n${indent(sql)}\n) AS query`;
+
     if (options.orderBy) {
-      const wrappedSql = `SELECT * FROM (${sql}) AS query`;
-      sql = wrappedSql;
-      sql += ` ORDER BY ${options.orderBy}`;
+      sql += `\nORDER BY ${options.orderBy}`;
     }
     if (options.limit) {
-      sql += ` LIMIT ${options.limit}`;
+      sql += `\nLIMIT ${options.limit}`;
     }
-    // console.log(sql);
   } catch (err) {
     return {
       pass: false,
@@ -55,11 +83,11 @@ async function toReturnRecords(queryFN, resultsFNs, options = {}) {
   }
 
   // Get the database connection configuration.
-  const user     = process.env['POSTGRES_USER'] || 'postgres';
-  const password = process.env['POSTGRES_PASS'] || 'postgres';
-  const host     = process.env['POSTGRES_HOST'] || 'localhost';
-  const port     = process.env['POSTGRES_PORT'] || '5432';
-  const database = process.env['POSTGRES_NAME'] || 'musa_509';
+  const user     = process.env['POSTGRES_USER'];
+  const password = process.env['POSTGRES_PASS'];
+  const host     = process.env['POSTGRES_HOST'];
+  const port     = process.env['POSTGRES_PORT'];
+  const database = process.env['POSTGRES_NAME'];
 
   // Run the query code.
   const client = new pg.Client({ user, password, host, port, database });
@@ -89,7 +117,6 @@ async function toReturnRecords(queryFN, resultsFNs, options = {}) {
       }
     }
   });
-
 
   // Compare the results. If any of the results files match
   // then the test passes.
