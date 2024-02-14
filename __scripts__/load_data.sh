@@ -33,17 +33,12 @@ function run_psql() {
 # Create a connection string for ogr2ogr
 POSTGRES_CONNSTRING="host=${POSTGRES_HOST} port=${POSTGRES_PORT} dbname=${POSTGRES_NAME} user=${POSTGRES_USER} password=${POSTGRES_PASS}"
 
-# Create database (if it doesn't already exist)
-run_psql -XtAc "SELECT 1"
-DB_STATUS=$?
-
-if [ $DB_STATUS -ne 0 ]; then
-  PGPASSWORD=${POSTGRES_PASS} createdb \
-    -h ${POSTGRES_HOST} \
-    -p ${POSTGRES_PORT} \
-    -U ${POSTGRES_USER} \
-    ${POSTGRES_NAME}
-fi
+# Create database
+PGPASSWORD=${POSTGRES_PASS} createdb \
+  -h ${POSTGRES_HOST} \
+  -p ${POSTGRES_PORT} \
+  -U ${POSTGRES_USER} \
+  ${POSTGRES_NAME}
 
 # Initialize table structure
 run_psql -f "${SCRIPTDIR}/create_tables.sql"
