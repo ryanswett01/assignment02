@@ -1,8 +1,6 @@
 # Assignment 02
 
-**Due: 29 March 2023**
-
-This assignment will work a bit differently than assignment #1. To complete this assigment you will need to do the following:
+This assignment will work similarly to assignment #1. To complete this assigment you will need to do the following:
 1.  Fork this repository to your own account.
 2.  Clone your fork to your local machine.
 3.  Complete the assignment according to the instructions below.
@@ -17,11 +15,13 @@ Write a query to answer each of the questions below.
 * Your queries should produce results in the format specified by each question.
 * Write your query in a SQL file corresponding to the question number (e.g. a file named _query06.sql_ for the answer to question #6).
 * Each SQL file should contain a single query that retrieves data from the database (i.e. a `SELECT` query).
-* Any SQL that does things other than retrieve data (e.g. SQL that creates indexes or update columns) should be in the _db_structure.sql_ file.
 * Some questions include a request for you to discuss your methods. Update this README file with your answers in the appropriate place.
 
-There are several datasets that are prescribed for you to use in this part. Your datasets tables be named:
-*   `septa.bus_stops` ([SEPTA GTFS](https://github.com/septadev/GTFS/releases) -- Use the file for February 26, 2023)
+### Initial database structure
+
+There are several datasets that are prescribed for you to use in this part. Below you will find table creation DDL statements that define the initial structure of your tables. Over the course of the assignment you may end up adding columns or indexes to these initial table structures. **You should put SQL that you use to modify the schema (e.g. SQL that creates indexes or update columns) should in the _db_structure.sql_ file.**
+
+*   `septa.bus_stops` ([SEPTA GTFS](https://github.com/septadev/GTFS/releases) -- Use the file for February 07, 2024)
     *   In the tests, the initial table will have the following structure:
         ```sql
         CREATE TABLE septa.bus_stops (
@@ -99,6 +99,8 @@ There are several datasets that are prescribed for you to use in this part. Your
             "${DATA_DIR}/phl_pwd_parcels/PWD_PARCELS.shp"
         ```
         _(remember to replace the variables with the appropriate values, and replace the backslashes (`\`) with backticks (`` ` ``) if you're using PowerShell)_
+
+        **Take note that PWD files use an EPSG:2272 coordinate reference system. To deal with this above I'm using the [`t_srs` option](https://gdal.org/programs/ogr2ogr.html#cmdoption-ogr2ogr-t_srs) which will reproject the data into whatever CRS you specify (in this case, EPSG:4326).**
 *   `azavea.neighborhoods` ([Azavea's GitHub](https://github.com/azavea/geo-data/tree/master/Neighborhoods_Philadelphia))
     * In the tests, this data will be loaded in with a geography column named `geog`, and all field names will be lowercased. If you use `ogr2ogr` to load the file, I recommend you use the following options:
         ```bash
@@ -121,12 +123,15 @@ There are several datasets that are prescribed for you to use in this part. Your
             PG:"host=localhost port=$PGPORT dbname=$PGNAME user=$PGUSER password=$PGPASS" \
             -nln census.blockgroups_2020 \
             -nlt MULTIPOLYGON \
+            -t_srs EPSG:4326 \
             -lco GEOMETRY_NAME=geog \
             -lco GEOM_TYPE=GEOGRAPHY \
             -overwrite \
             "$DATADIR/census_blockgroups_2020/tl_2020_42_bg.shp"
         ```
         _(remember to replace the variables with the appropriate values, and replace the backslashes (`\`) with backticks (`` ` ``) if you're using PowerShell)_
+
+        **Take note that Census TIGER/Line files use an EPSG:4269 coordinate reference system. To deal with this above I'm using the [`t_srs` option](https://gdal.org/programs/ogr2ogr.html#cmdoption-ogr2ogr-t_srs) which will reproject the data into whatever CRS you specify (in this case, EPSG:4326).** Check out [this stack exchange answer](https://gis.stackexchange.com/a/170854/8583) for the difference.
   *   `census.population_2020` ([Census Explorer](https://data.census.gov/table?t=Populations+and+People&g=0500000US42101$1500000&y=2020&d=DEC+Redistricting+Data+(PL+94-171)&tid=DECENNIALPL2020.P1))  
       * In the tests, the initial table will have the following structure:
         ```sql
@@ -138,7 +143,7 @@ There are several datasets that are prescribed for you to use in this part. Your
         ```
       * Note that the file from the Census Explorer will have more fields than those three. You may have to do some data preprocessing to get the data into the correct format.
 
-**Note, when tests aren't passing, I do take logic for solving problems into account _for partial credit_ when grading. When in doubt, write your thinking for solving the problem even if you aren't able to get a full response.**
+        Alternatively you can use the results from the [Census API](https://api.census.gov/data/2020/dec/pl?get=NAME,GEO_ID,P1_001N&for=block%20group:*&in=state:42%20county:*), but you'll still have to transform the JSON that it gives you into a CSV.
 
 ## Questions
 

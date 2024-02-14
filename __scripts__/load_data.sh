@@ -3,8 +3,9 @@
 set -e
 set -x
 
+POSTGRES_HOST=${POSTGRES_HOST:-localhost}
+POSTGRES_PORT=${POSTGRES_PORT:-5432}
 POSTGRES_NAME=${POSTGRES_NAME:-assignment02}
-POSTGRES_PORT=${POSTGRES_PORT:-5434}
 POSTGRES_USER=${POSTGRES_USER:-postgres}
 POSTGRES_PASS=${POSTGRES_PASS:-postgres}
 PYTHON_COMMAND=${PYTHON_COMMAND:-python3}
@@ -13,74 +14,56 @@ SCRIPTDIR=$(readlink -f $(dirname $0))
 DATADIR=$(readlink -f $(dirname $0)/../__data__)
 mkdir -p ${DATADIR}
 
-# Download and unzip trip data
-# curl -L https://bicycletransit.wpenginepowered.com/wp-content/uploads/2022/12/indego-trips-2022-q3.zip > ${DATADIR}/indego-trips-2022-q3.zip
-# unzip -o ${DATADIR}/indego-trips-2022-q3.zip -d ${DATADIR}
-
-# curl -L https://bicycletransit.wpenginepowered.com/wp-content/uploads/2021/10/indego-trips-2021-q3.zip > ${DATADIR}/indego-trips-2021-q3.zip
-# unzip -o ${DATADIR}/indego-trips-2021-q3.zip -d ${DATADIR}
-
-
 # Download and unzip gtfs data
-curl -L https://github.com/septadev/GTFS/releases/download/v202302261/gtfs_public.zip > ${DATADIR}/gtfs_public.zip
+curl -L https://github.com/septadev/GTFS/releases/download/v202402070/gtfs_public.zip > ${DATADIR}/gtfs_public.zip
 unzip -o ${DATADIR}/gtfs_public.zip -d ${DATADIR}/gtfs_public
 unzip -o ${DATADIR}/gtfs_public/google_bus.zip -d ${DATADIR}/google_bus
 unzip -o ${DATADIR}/gtfs_public/google_rail.zip -d ${DATADIR}/google_rail
 
-# Create database and initialize table structure
-PGPASSWORD=postgres createdb \
-  -h localhost \
+# Create a convenience function for running psql with DB credentials
+function run_psql() {
+  PGPASSWORD=${POSTGRES_PASS} psql \
+  -h ${POSTGRES_HOST} \
   -p ${POSTGRES_PORT} \
-  -U postgres \
-  ${POSTGRES_NAME}
-PGPASSWORD=postgres psql \
-  -h localhost \
-  -p ${POSTGRES_PORT} \
-  -U postgres \
+  -U ${POSTGRES_USER} \
   -d ${POSTGRES_NAME} \
-  -f "${SCRIPTDIR}/create_tables.sql"
+  "$@"
+}
+
+# Create a connection string for ogr2ogr
+POSTGRES_CONNSTRING="host=${POSTGRES_HOST} port=${POSTGRES_PORT} dbname=${POSTGRES_NAME} user=${POSTGRES_USER} password=${POSTGRES_PASS}"
+
+# Create database (if it doesn't already exist)
+run_psql -XtAc "SELECT 1"
+DB_STATUS=$?
+
+if [ $DB_STATUS -ne 0 ]; then
+  PGPASSWORD=${POSTGRES_PASS} createdb \
+    -h ${POSTGRES_HOST} \
+    -p ${POSTGRES_PORT} \
+    -U ${POSTGRES_USER} \
+    ${POSTGRES_NAME}
+fi
+
+# Initialize table structure
+run_psql -f "${SCRIPTDIR}/create_tables.sql"
 
 # Load trip gtfs data into database
 sed -i 's/\r//g' ${DATADIR}/google_bus/stops.txt
-PGPASSWORD=postgres psql \
-  -h localhost \
-  -p ${POSTGRES_PORT} \
-  -U postgres \
-  -d ${POSTGRES_NAME} \
-  -c "\copy septa.bus_stops FROM '${DATADIR}/google_bus/stops.txt' DELIMITER ',' CSV HEADER;"
+run_psql -c "\copy septa.bus_stops FROM '${DATADIR}/google_bus/stops.txt' DELIMITER ',' CSV HEADER;"
 
 # Use sed to replace \r\n with \n in the google_bus/routes.txt file
 sed -i 's/\r//g' ${DATADIR}/google_bus/routes.txt
-PGPASSWORD=postgres psql \
-  -h localhost \
-  -p ${POSTGRES_PORT} \
-  -U postgres \
-  -d ${POSTGRES_NAME} \
-  -c "\copy septa.bus_routes FROM '${DATADIR}/google_bus/routes.txt' DELIMITER ',' CSV HEADER;"
+run_psql -c "\copy septa.bus_routes FROM '${DATADIR}/google_bus/routes.txt' DELIMITER ',' CSV HEADER;"
 
 sed -i 's/\r//g' ${DATADIR}/google_bus/trips.txt
-PGPASSWORD=postgres psql \
-  -h localhost \
-  -p ${POSTGRES_PORT} \
-  -U postgres \
-  -d ${POSTGRES_NAME} \
-  -c "\copy septa.bus_trips FROM '${DATADIR}/google_bus/trips.txt' DELIMITER ',' CSV HEADER;"
+run_psql -c "\copy septa.bus_trips FROM '${DATADIR}/google_bus/trips.txt' DELIMITER ',' CSV HEADER;"
 
 sed -i 's/\r//g' ${DATADIR}/google_bus/shapes.txt
-PGPASSWORD=postgres psql \
-  -h localhost \
-  -p ${POSTGRES_PORT} \
-  -U postgres \
-  -d ${POSTGRES_NAME} \
-  -c "\copy septa.bus_shapes FROM '${DATADIR}/google_bus/shapes.txt' DELIMITER ',' CSV HEADER;"
+run_psql -c "\copy septa.bus_shapes FROM '${DATADIR}/google_bus/shapes.txt' DELIMITER ',' CSV HEADER;"
 
 sed -i 's/\r//g' ${DATADIR}/google_rail/stops.txt
-PGPASSWORD=postgres psql \
-  -h localhost \
-  -p ${POSTGRES_PORT} \
-  -U postgres \
-  -d ${POSTGRES_NAME} \
-  -c "\copy septa.rail_stops FROM '${DATADIR}/google_rail/stops.txt' DELIMITER ',' CSV HEADER;"
+run_psql -c "\copy septa.rail_stops FROM '${DATADIR}/google_rail/stops.txt' DELIMITER ',' CSV HEADER;"
 
 
 # Download and unzip census population data (didn't find download url)
@@ -115,22 +98,17 @@ EOF
 
 
 # load data into database
-PGPASSWORD=postgres psql \
-  -h localhost \
-  -p ${POSTGRES_PORT} \
-  -U postgres \
-  -d ${POSTGRES_NAME} \
-  -c "\copy census.population_2020 FROM '${DATADIR}/census_population_2020.csv' DELIMITER ',' CSV HEADER;"
+run_psql -c "\copy census.population_2020 FROM '${DATADIR}/census_population_2020.csv' DELIMITER ',' CSV HEADER;"
 
 
-# Download and unzip pwd parcel data
+# Download and unzip PWD Stormwater Billing parcel data
 curl -L https://opendata.arcgis.com/datasets/84baed491de44f539889f2af178ad85c_0.zip > ${DATADIR}/phl_pwd_parcels.zip
 unzip -o ${DATADIR}/phl_pwd_parcels.zip -d ${DATADIR}/phl_pwd_parcels
 
 # load parcel data into database
 ogr2ogr \
     -f "PostgreSQL" \
-    PG:"host=localhost port=${POSTGRES_PORT} dbname=${POSTGRES_NAME} user=${POSTGRES_USER} password=${POSTGRES_PASS}" \
+    PG:"${POSTGRES_CONNSTRING}" \
     -nln phl.pwd_parcels \
     -nlt MULTIPOLYGON \
     -t_srs EPSG:4326 \
@@ -145,7 +123,7 @@ curl -L https://github.com/azavea/geo-data/raw/9e0ac39840803d6218f4503e8a16c7aad
 # load neighbourhoods data into database
 ogr2ogr \
     -f "PostgreSQL" \
-    PG:"host=localhost port=${POSTGRES_PORT} dbname=${POSTGRES_NAME} user=${POSTGRES_USER} password=${POSTGRES_PASS}" \
+    PG:"${POSTGRES_CONNSTRING}" \
     -nln azavea.neighborhoods \
     -nlt MULTIPOLYGON \
     -lco GEOMETRY_NAME=geog \
@@ -159,7 +137,7 @@ unzip -o ${DATADIR}/census_blockgroups_2020.zip -d ${DATADIR}/census_blockgroups
 # Load census data into database
 ogr2ogr \
     -f "PostgreSQL" \
-    PG:"host=localhost port=${POSTGRES_PORT} dbname=${POSTGRES_NAME} user=${POSTGRES_USER} password=${POSTGRES_PASS}" \
+    PG:"${POSTGRES_CONNSTRING}" \
     -nln census.blockgroups_2020 \
     -nlt MULTIPOLYGON \
     -t_srs EPSG:4326 \
