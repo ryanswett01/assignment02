@@ -109,8 +109,8 @@ async function toReturnRecords(queryFN, resultsFNs, options = {}) {
   received.rows.map((row) => {
     for (const key in row) {
       if(!row[key]) {
-        if(row[key] != '0') { row[key] = 'NULL'; }
-        else if(row[key] == '0') { row[key] = '0'; }
+        if(row[key] != '0') { row[key] = 'NULL' }
+        else if(row[key] == '0') { row[key] = '0' }
       }
       else {
         row[key] = row[key].toString();

@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-unused-vars
-import { expect, describe, it, jest } from '@jest/globals';
+import { expect, describe, it } from '@jest/globals';
 import './jest_extensions';
 
 describe('Query 04', () => {
