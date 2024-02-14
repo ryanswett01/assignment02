@@ -53,7 +53,7 @@ jobs:
     - name: Load initial data
       run: dotenv __scripts__/load_data.sh
     - name: Apply database customizations
-      run: dotenv __script__/apply_customizations.sh
+      run: dotenv __scripts__/apply_customizations.sh
     - name: Run tests
       run: |
         npm test __tests__/test_query03.js
