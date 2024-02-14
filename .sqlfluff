@@ -1,12 +1,3 @@
 [sqlfluff]
 dialect = postgres
-exclude_rules = L016,L031,L032,L059
-
-[sqlfluff:rules]
-tab_space_size = 4
-
-[sqlfluff:rules:L010]
-capitalisation_policy = consistent
-
-[sqlfluff:rules:L030]
-extended_capitalisation_policy = consistent
+exclude_rules = layout.long_lines,aliasing.forbid,structure.using,references.quoting
