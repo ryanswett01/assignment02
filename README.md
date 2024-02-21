@@ -161,7 +161,7 @@ There are several datasets that are prescribed for you to use in this part. Belo
     )
     ```
 
-3.  Using the Philadelphia Water Department Stormwater Billing Parcels dataset, pair each parcel with its closest bus stop. The final result should give the parcel address, bus stop name, and distance apart in meters. Order by distance (largest on top).
+3.  Using the Philadelphia Water Department Stormwater Billing Parcels dataset, pair each parcel with its closest bus stop. The final result should give the parcel address, bus stop name, and distance apart in meters, rounded to two decimals. Order by distance (largest on top).
 
     _Your query should run in under two minutes._
 
@@ -172,7 +172,7 @@ There are several datasets that are prescribed for you to use in this part. Belo
     (
         parcel_address text,  -- The address of the parcel
         stop_name text,  -- The name of the bus stop
-        distance double precision  -- The distance apart in meters
+        distance numeric  -- The distance apart in meters, rounded to two decimals
     )
     ```
 
@@ -194,7 +194,7 @@ There are several datasets that are prescribed for you to use in this part. Belo
         route_short_name text,  -- The short name of the route
         trip_headsign text,  -- Headsign of the trip
         shape_geog geography,  -- The shape of the trip
-        shape_length double precision  -- Length of the trip in meters
+        shape_length numeric  -- Length of the trip in meters, rounded to the nearest whole number
     )
     ```
 
