@@ -26,12 +26,16 @@ There are several datasets that are prescribed for you to use in this part. Belo
         ```sql
         CREATE TABLE septa.bus_stops (
             stop_id TEXT,
+            stop_code TEXT,
             stop_name TEXT,
+            stop_desc TEXT,
             stop_lat DOUBLE PRECISION,
             stop_lon DOUBLE PRECISION,
-            location_type TEXT,
-            parent_station TEXT,
             zone_id TEXT,
+            stop_url TEXT,
+            location_type INTEGER,
+            parent_station TEXT,
+            stop_timezone TEXT,
             wheelchair_boarding INTEGER
         );
         ```
@@ -40,12 +44,14 @@ There are several datasets that are prescribed for you to use in this part. Belo
         ```sql
         CREATE TABLE septa.bus_routes (
             route_id TEXT,
+            agency_id TEXT,
             route_short_name TEXT,
             route_long_name TEXT,
+            route_desc TEXT,
             route_type TEXT,
+            route_url TEXT,
             route_color TEXT,
-            route_text_color TEXT,
-            route_url TEXT
+            route_text_color TEXT
         );
         ```
 *   `septa.bus_trips` ([SEPTA GTFS](https://github.com/septadev/GTFS/releases))
@@ -56,9 +62,12 @@ There are several datasets that are prescribed for you to use in this part. Belo
             service_id TEXT,
             trip_id TEXT,
             trip_headsign TEXT,
-            block_id TEXT,
+            trip_short_name TEXT,
             direction_id TEXT,
-            shape_id TEXT
+            block_id TEXT,
+            shape_id TEXT,
+            wheelchair_accessible INTEGER,
+            bikes_allowed INTEGER
         );
         ```
 *   `septa.bus_shapes` ([SEPTA GTFS](https://github.com/septadev/GTFS/releases))
@@ -68,7 +77,8 @@ There are several datasets that are prescribed for you to use in this part. Belo
             shape_id TEXT,
             shape_pt_lat DOUBLE PRECISION,
             shape_pt_lon DOUBLE PRECISION,
-            shape_pt_sequence INTEGER
+            shape_pt_sequence INTEGER,
+            shape_dist_traveled DOUBLE PRECISION
         );
         ```
 *   `septa.rail_stops` ([SEPTA GTFS](https://github.com/septadev/GTFS/releases))
@@ -99,15 +109,13 @@ There are several datasets that are prescribed for you to use in this part. Belo
             "${DATA_DIR}/phl_pwd_parcels/PWD_PARCELS.shp"
         ```
         _(remember to replace the variables with the appropriate values, and replace the backslashes (`\`) with backticks (`` ` ``) if you're using PowerShell)_
-
-        **Take note that PWD files use an EPSG:2272 coordinate reference system. To deal with this above I'm using the [`t_srs` option](https://gdal.org/programs/ogr2ogr.html#cmdoption-ogr2ogr-t_srs) which will reproject the data into whatever CRS you specify (in this case, EPSG:4326).**
 *   `azavea.neighborhoods` ([Azavea's GitHub](https://github.com/azavea/geo-data/tree/master/Neighborhoods_Philadelphia))
     * In the tests, this data will be loaded in with a geography column named `geog`, and all field names will be lowercased. If you use `ogr2ogr` to load the file, I recommend you use the following options:
         ```bash
         ogr2ogr \
             -f "PostgreSQL" \
             PG:"host=localhost port=$PGPORT dbname=$PGNAME user=$PGUSER password=$PGPASS" \
-            -nln azavea.neighborhoods \
+            -nln phl.neighborhoods \
             -nlt MULTIPOLYGON \
             -lco GEOMETRY_NAME=geog \
             -lco GEOM_TYPE=GEOGRAPHY \
@@ -198,7 +206,7 @@ There are several datasets that are prescribed for you to use in this part. Belo
     )
     ```
 
-5.  Rate neighborhoods by their bus stop accessibility for wheelchairs. Use Azavea's neighborhood dataset from OpenDataPhilly along with an appropriate dataset from the Septa GTFS bus feed. Use the [GTFS documentation](https://gtfs.org/reference/static/) for help. Use some creativity in the metric you devise in rating neighborhoods.
+5.  Rate neighborhoods by their bus stop accessibility for wheelchairs. Use OpenDataPhilly's neighborhood dataset along with an appropriate dataset from the Septa GTFS bus feed. Use the [GTFS documentation](https://gtfs.org/reference/static/) for help. Use some creativity in the metric you devise in rating neighborhoods.
 
     _NOTE: There is no automated test for this question, as there's no one right answer. With urban data analysis, this is frequently the case._
 

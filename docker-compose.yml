@@ -1,0 +1,55 @@
+# Create a postgis service using the postgis/postgis image.
+services:
+  db:
+    # Database image pre-loaded with initial table structure
+    image: ghcr.io/weitzman-musa-geocloud/assignment02:main
+    environment:
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: [
+          "CMD-SHELL",
+          'psql -U postgres -d postgres -c "SELECT ST_Buffer( ST_SetSRID(''POINT(0 0)''::GEOMETRY, 4326), 1) AS geom ;"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  run-linter:
+    image: ubuntu:24.04
+    volumes:
+      - .:/assignment02
+    command:
+      - "bash"
+      - "-c"
+      - |
+        apt-get update && \
+        apt-get install -y python3 python3-pip python3-venv && \
+        cd /tmp && \
+        python3 -m venv venv && \
+        source venv/bin/activate && \
+        cd /assignment02 && \
+        pip install -r requirements.txt && \
+        sqlfluff lint .
+
+  run-tests:
+    image: ubuntu:24.04
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASS: postgres
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_NAME: assn02
+    volumes:
+      - .:/assignment02
+    command:
+      - "bash"
+      - "-c"
+      - |
+        apt update && \
+        apt install -y nodejs npm && \
+        cd /assignment02 && \
+        npm install --global && \
+        npm run test -- --rootDir /assignment02

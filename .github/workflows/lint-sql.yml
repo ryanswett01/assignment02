@@ -2,6 +2,7 @@ name: Lint SQL files
 on:
   push:
     branches: [ main ]
+    paths: [ '**/run_linter.sh', '**sql**' ]
 
 jobs:
   build:
